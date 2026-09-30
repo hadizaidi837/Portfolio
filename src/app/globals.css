@@ -1,0 +1,377 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #060814;
+  --surface: #0b0e1f;
+  --foreground: #eef1f8;
+  --muted: #8f97b3;
+  --border: rgba(255, 255, 255, 0.07);
+  --accent: #7c5cff;
+  --accent-2: #22d3ee;
+  --accent-3: #ff4d94;
+}
+
+* {
+  border-color: var(--border);
+}
+
+/* Fluid root type scale so every device lands on a sensible size */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* `clip` (not `hidden`) avoids creating a scroll container, which would
+     break `position: sticky` and smooth-scroll anchoring. */
+  overflow-x: clip;
+  font-size: clamp(15px, 0.42vw + 14.1px, 17px);
+}
+
+/* Locks scrolling while the mobile nav drawer is open */
+html.is-nav-locked {
+  overflow: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(1000px 600px at 12% -8%, rgba(124, 92, 255, 0.16), transparent 60%),
+    radial-gradient(900px 620px at 88% 8%, rgba(34, 211, 238, 0.12), transparent 62%),
+    radial-gradient(1000px 700px at 50% 105%, rgba(255, 77, 148, 0.1), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Fallback for browsers without dvh */
+@supports not (height: 100dvh) {
+  body {
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    /* fixed attachment causes jank on iOS Safari */
+    background-attachment: scroll;
+  }
+}
+
+/* ---------- Background decor ---------- */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: radial-gradient(ellipse 85% 60% at 50% 0%, #000 35%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 60% at 50% 0%, #000 35%, transparent 100%);
+}
+
+.glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(100px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ---------- Animations ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.06);
+  }
+}
+
+/* Gentler float for the cut-out portrait. Amplitude is deliberately tiny:
+   a large drift makes the head look like it is detaching from the glow
+   stack behind it, which reads as a glitch rather than as depth. */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@keyframes aurora {
+  0%,
+  100% {
+    transform: translate3d(-4%, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) rotate(8deg);
+  }
+}
+
+/* ---- Scroll-reveal keyframes (driven by .reveal + JS class) ---- */
+
+/* Every reveal starts hidden. Kept out of `@layer` so specificity stays flat
+   and the `is-revealed` state can override it. */
+.reveal {
+  opacity: 0;
+  transition:
+    opacity var(--reveal-duration, 0.75s) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--reveal-duration, 0.75s) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    filter var(--reveal-duration, 0.75s) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1));
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+/* --- directional entrances --- */
+.reveal[data-reveal="up"] {
+  transform: translate3d(0, 28px, 0);
+}
+.reveal[data-reveal="down"] {
+  transform: translate3d(0, -28px, 0);
+}
+.reveal[data-reveal="left"] {
+  transform: translate3d(-32px, 0, 0);
+}
+.reveal[data-reveal="right"] {
+  transform: translate3d(32px, 0, 0);
+}
+.reveal[data-reveal="scale"] {
+  transform: scale(0.94);
+}
+.reveal[data-reveal="zoom-in"] {
+  transform: scale(0.9);
+}
+.reveal[data-reveal="blur"] {
+  filter: blur(10px);
+  transform: translate3d(0, 18px, 0);
+}
+
+/* The revealed state resets every animated property. */
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  will-change: auto;
+}
+
+/* Page-load entrance (hero) — no observer needed. */
+.animate-fade-up {
+  animation: fade-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: float-slow 11s ease-in-out infinite;
+}
+
+.animate-float-soft {
+  animation: float-soft 7s ease-in-out infinite;
+}
+
+.animate-aurora {
+  animation: aurora 18s ease-in-out infinite;
+}
+
+/* Scroll-linked progress bar. `--scroll-progress` is 0→1, written by
+   requestAnimationFrame. Uses transform only, so it never triggers layout. */
+.scroll-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  height: 3px;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--scroll-progress, 0));
+  background-image: linear-gradient(90deg, var(--accent), #a855f7, var(--accent-2));
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* ---------- Accessibility: motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-float,
+  .animate-float-soft,
+  .animate-aurora,
+  .animate-spin-slow {
+    animation: none;
+  }
+
+  /* Reveal instantly and statically: no transition, no travel. */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+
+  .scroll-progress {
+    /* Still useful as a position indicator, just not animated. */
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Coarse pointers get bigger hit targets (WCAG 2.5.8). */
+@media (pointer: coarse) {
+  .chip {
+    @apply px-3.5 py-1.5;
+  }
+
+  /* Text-only links need vertical padding to reach a 44px target. */
+  a[href^="http"],
+  a[href^="mailto"],
+  a[href="#top"] {
+    @apply py-2;
+  }
+
+  /* Nav rows */
+  footer a[href] {
+    @apply py-2;
+  }
+}
+
+/* ---------- Reusable components ---------- */
+@layer components {
+  /* Fluid gutters: tighter on phones, roomier on desktop. */
+  .container-page {
+    @apply mx-auto w-full px-5 sm:px-6 lg:px-8;
+    max-width: 72rem;
+  }
+
+  .section-title {
+    /* fluid between 1.75rem and 2.5rem */
+    @apply font-semibold tracking-tight;
+    font-size: clamp(1.75rem, 1.2rem + 2.2vw, 2.5rem);
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .card {
+    @apply relative rounded-2xl border p-5 transition duration-300 sm:p-6;
+    border-color: var(--border);
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.055) 0%,
+      rgba(255, 255, 255, 0.015) 100%
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  /* Hover lift is a pointer-only affordance; on touch it just causes a
+     sticky hover state after tap, so gate it behind `hover:hover`. */
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      @apply -translate-y-1;
+      border-color: rgba(124, 92, 255, 0.45);
+      box-shadow:
+        0 20px 50px -26px rgba(124, 92, 255, 0.7),
+        0 0 0 1px rgba(124, 92, 255, 0.14);
+    }
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium;
+    border-color: var(--border);
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Primary gradient-filled button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-white transition duration-300;
+    /* px (not rem) so this stays 44px even though the root font-size is fluid */
+    min-height: 44px;
+    background-image: linear-gradient(
+      100deg,
+      var(--accent) 0%,
+      #a855f7 50%,
+      var(--accent-2) 100%
+    );
+    box-shadow: 0 10px 30px -12px rgba(124, 92, 255, 0.85);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px -14px rgba(124, 92, 255, 1);
+    }
+  }
+
+  /* Outlined glass button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-semibold transition duration-300;
+    min-height: 44px;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-ghost:hover {
+      @apply -translate-y-0.5;
+      border-color: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.07);
+    }
+  }
+
+  /* Visible keyboard focus everywhere, not just on buttons. */
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      100deg,
+      #ffffff 0%,
+      #c4b5fd 30%,
+      var(--accent-2) 62%,
+      var(--accent-3) 100%
+    );
+  }
+
+  /* Thin gradient hairline used under section headings */
+  .rule-gradient {
+    height: 1px;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(124, 92, 255, 0.65),
+      rgba(34, 211, 238, 0.55),
+      transparent
+    );
+  }
+}
